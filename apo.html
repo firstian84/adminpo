@@ -5,21 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
         :root {
-            /* Palette Gelap Profesional */
             --primary: #00a8ff;
-            --bg-body: #0f172a; /* Deep Navy Dark */
-            --glass: #1e293b; /* Slate Dark */
+            --bg-body: #0f172a;
+            --glass: #1e293b;
             --text-main: #f1f5f9;
             --text-muted: #94a3b8;
             --accent: #7e57c2;
-            --link-color: #38bdf8;
             --success: #10b981;
             --excel: #22c55e;
             --border: #334155;
@@ -53,37 +50,19 @@
             padding-bottom: 20px;
         }
 
-        .action-btns {
-            display: flex;
-            gap: 10px;
-        }
+        .action-btns { display: flex; gap: 10px; }
 
-        h2 { 
-            color: var(--primary); 
-            margin: 0; 
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
+        h2 { color: var(--primary); margin: 0; font-weight: 700; }
 
         .btn {
-            border: none;
-            padding: 10px 22px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: white;
-            font-size: 14px;
+            border: none; padding: 10px 20px; border-radius: 8px;
+            cursor: pointer; font-weight: 600; transition: 0.3s;
+            display: flex; align-items: center; gap: 8px; color: white;
         }
 
-        .refresh-btn { background: #334155; border: 1px solid var(--border); }
-        .refresh-btn:hover { background: var(--primary); border-color: var(--primary); }
-        
+        .refresh-btn { background: #334155; }
         .download-btn { background: var(--excel); }
-        .btn:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .btn:hover { opacity: 0.9; transform: translateY(-2px); }
 
         .table-wrapper { 
             overflow-x: auto; 
@@ -92,130 +71,105 @@
             border: 1px solid var(--border);
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+        table { width: 100%; border-collapse: collapse; }
 
         th {
-            background: #1e293b;
-            text-align: left;
-            padding: 18px 15px;
-            font-size: 11px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            letter-spacing: 1px;
+            background: #1e293b; text-align: left; padding: 18px 15px;
+            font-size: 11px; text-transform: uppercase; color: var(--text-muted);
             border-bottom: 2px solid var(--border);
         }
 
-        td {
-            padding: 15px;
-            border-bottom: 1px solid var(--border);
-            font-size: 13px;
-            vertical-align: middle;
-            color: var(--text-main);
-        }
+        td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
 
         tr:hover { background-color: var(--hover); }
 
-        .project-details-text {
-            max-width: 200px;
-            display: block;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        .status-badge {
-            padding: 5px 12px;
+        .btn-map {
+            background: var(--accent);
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
             border-radius: 6px;
             font-size: 10px;
-            font-weight: 700;
-            display: inline-block;
+            font-family: monospace;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.3s;
+        }
+
+        .btn-map:hover { background: #5e35b1; box-shadow: 0 0 10px rgba(126, 87, 194, 0.5); }
+
+        .status-badge {
+            padding: 5px 12px; border-radius: 6px; font-size: 10px; font-weight: 700;
         }
 
         .status-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
         .status-verified { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
 
         .btn-edit {
-            background: #334155;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            color: var(--primary);
-            transition: 0.2s;
+            background: #334155; border: none; padding: 8px 12px;
+            border-radius: 6px; cursor: pointer; color: var(--primary);
         }
 
         .btn-edit:hover { background: var(--primary); color: white; }
 
         /* MODAL STYLES */
         .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
+            display: none; position: fixed; z-index: 1000;
             left: 0; top: 0; width: 100%; height: 100%;
-            background: rgba(2, 6, 23, 0.8);
-            backdrop-filter: blur(8px);
+            background: rgba(2, 6, 23, 0.8); backdrop-filter: blur(8px);
         }
 
         .modal-content {
-            background: var(--glass);
-            width: 90%;
-            max-width: 550px;
-            margin: 60px auto;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            background: var(--glass); width: 90%; max-width: 550px;
+            margin: 50px auto; padding: 30px; border-radius: 20px;
             border: 1px solid var(--border);
-            color: var(--text-main);
         }
 
-        .modal-header { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 25px; }
-        .modal-header h3 { margin: 0; color: var(--primary); }
-
-        .form-group { margin-bottom: 18px; }
-        .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
         .form-group input, .form-group textarea, .form-group select {
-            width: 100%; padding: 12px; 
-            background: #0f172a;
-            border: 1px solid var(--border); 
-            border-radius: 8px; 
-            box-sizing: border-box; 
-            font-family: inherit;
-            color: white;
-            transition: border 0.3s;
-        }
-        .form-group input:focus, .form-group textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-        .form-group textarea { height: 100px; resize: none; }
-
-        .modal-footer {
-            display: flex; gap: 12px; margin-top: 30px;
+            width: 100%; padding: 10px; background: #0f172a;
+            border: 1px solid var(--border); border-radius: 8px; color: white;
         }
 
-        .btn-save { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; flex: 2; font-weight: 600; transition: 0.3s; }
-        .btn-cancel { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 12px; border-radius: 10px; cursor: pointer; flex: 1; transition: 0.3s; }
-        .btn-cancel:hover { background: #334155; color: white; }
+        .modal-footer { display: flex; gap: 10px; margin-top: 25px; }
+        .btn-save { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; flex: 2; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 12px; border-radius: 8px; flex: 1; cursor: pointer; }
 
-        .loading { text-align: center; padding: 60px; font-style: italic; color: var(--text-muted); font-size: 14px; }
-        
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-body); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .loading { text-align: center; padding: 50px; color: var(--text-muted); }
+
+        /* --- TAMPILAN DINAMIS ANDROID (MEDIA QUERIES) --- */
+        @media screen and (max-width: 768px) {
+            body { padding: 10px; }
+            .admin-container { padding: 15px; border-radius: 12px; }
+            .header { flex-direction: column; gap: 15px; align-items: flex-start; }
+            .action-btns { width: 100%; }
+            .btn { flex: 1; justify-content: center; font-size: 12px; }
+            
+            /* Sembunyikan kolom ID dan Budget di HP agar tidak sempit */
+            th:nth-child(1), td:nth-child(1),
+            th:nth-child(5), td:nth-child(5) { display: none; }
+            
+            th, td { padding: 12px 8px; font-size: 12px; }
+            
+            .modal-content { width: 95%; margin: 20px auto; padding: 20px; max-height: 90vh; overflow-y: auto; }
+            .modal-footer { flex-direction: column-reverse; }
+            .btn-save, .btn-cancel { width: 100%; padding: 15px; }
+        }
+
+        @media screen and (max-width: 480px) {
+            /* Sembunyikan Kebutuhan di layar sangat kecil agar tetap rapi */
+            th:nth-child(4), td:nth-child(4) { display: none; }
+            h2 { font-size: 18px; }
+        }
     </style>
 </head>
 <body>
 
 <div class="admin-container">
     <div class="header">
-        <h2><i class="fas fa-layer-group"></i> Admin P.O</h2>
+        <h2><i class="fas fa-map-marked-alt"></i> Admin P.O </h2>
         <div class="action-btns">
             <button class="btn download-btn" onclick="exportToExcel()">
                 <i class="fas fa-file-excel"></i> Download
@@ -227,31 +181,30 @@
     </div>
 
     <div class="table-wrapper">
-        <table id="orderTable">
+        <table>
             <thead>
                 <tr>
                     <th>ID</th>
                     <th>Client</th>
                     <th>WhatsApp</th>
                     <th>Kebutuhan</th>
-                    <th>Project Details</th>
                     <th>Budget</th>
+                    <th>Lokasi (GPS)</th>
                     <th>Status</th>
-                    <th>Link Akses</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
         </table>
-        <div id="loader" class="loading">
-            <i class="fas fa-spinner fa-spin"></i> &nbsp; Menghubungkan ke database...
-        </div>
+        <div id="loader" class="loading">Memproses data koordinat...</div>
     </div>
 </div>
 
 <div id="editModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header"><h3><i class="fas fa-edit"></i> Edit Project Details</h3></div>
+        <div style="border-bottom: 1px solid var(--border); margin-bottom: 20px;">
+            <h3 style="color: var(--primary); margin-top: 0;">Edit PO</h3>
+        </div>
         <input type="hidden" id="editKey">
         <div class="form-group">
             <label>Nama Client</label>
@@ -262,11 +215,7 @@
             <input type="text" id="editNeed">
         </div>
         <div class="form-group">
-            <label>Project Details</label>
-            <textarea id="editDetails"></textarea>
-        </div>
-        <div class="form-group">
-            <label>Budget (IDR)</label>
+            <label>Budget (Angka)</label>
             <input type="number" id="editBudget">
         </div>
         <div class="form-group">
@@ -274,7 +223,7 @@
             <input type="text" id="editLink">
         </div>
         <div class="form-group">
-            <label>Status Verifikasi</label>
+            <label>Status</label>
             <select id="editStatus">
                 <option value="0">PENDING</option>
                 <option value="1">VERIFIED</option>
@@ -282,21 +231,20 @@
         </div>
         <div class="modal-footer">
             <button class="btn-cancel" onclick="closeModal()">Batal</button>
-            <button class="btn-save" onclick="saveData()">Update</button>
+            <button class="btn-save" onclick="saveData()">Simpan </button>
         </div>
     </div>
 </div>
 
 <script>
-    // LOGIKA KODE TETAP SAMA SESUAI PERMINTAAN
     const CONFIG = {
         URL: "https://enabled-crayfish-71186.upstash.io",
         TOKEN: "gQAAAAAAARYSAAIncDE2MzUzMjQ5Mzg2N2E0YzU2OTUxODJjZWNmY2E2NzkyMXAxNzExODY",
         PREFIX: "project_order_"
     };
 
-    let allProjectData = []; 
-    let currentData = {}; 
+    let allProjectData = [];
+    let currentData = {};
 
     async function fetchAllData() {
         const tableBody = document.getElementById('tableBody');
@@ -312,11 +260,6 @@
             const keysData = await keysRes.json();
             const keys = keysData.result || [];
 
-            if (keys.length === 0) {
-                loader.innerText = "Database kosong.";
-                return;
-            }
-
             for (const key of keys) {
                 const valRes = await fetch(`${CONFIG.URL}/get/${key}`, {
                     headers: { Authorization: `Bearer ${CONFIG.TOKEN}` }
@@ -324,33 +267,43 @@
                 const valData = await valRes.json();
                 if (valData.result) {
                     const parsed = JSON.parse(valData.result);
-                    allProjectData.push(parsed);
+                    allProjectData.push({ key, ...parsed });
                     renderRow(key, parsed);
                 }
             }
             loader.style.display = 'none';
         } catch (error) {
-            loader.innerText = "Gagal memuat data.";
+            loader.innerText = "Koneksi database gagal.";
         }
     }
 
     function renderRow(key, data) {
         const tableBody = document.getElementById('tableBody');
         const row = document.createElement('tr');
+        
         const statusClass = data.status == 1 ? 'status-verified' : 'status-pending';
         const statusText = data.status == 1 ? 'VERIFIED' : 'PENDING';
+
+        let locationHTML = `<span style="color:var(--text-muted)">N/A</span>`;
+        if (data.location && data.location.lat) {
+            const latLng = `${data.location.lat.toFixed(5)}, ${data.location.lng.toFixed(5)}`;
+            const mapsUrl = `https://www.google.com/maps?q=${data.location.lat},${data.location.lng}`;
+            locationHTML = `
+                <a href="${mapsUrl}" target="_blank" class="btn-map">
+                    <i class="fas fa-map-marker-alt"></i> ${latLng}
+                </a>`;
+        }
 
         row.innerHTML = `
             <td><strong>${data.id || '-'}</strong></td>
             <td>${data.client || '-'}</td>
-            <td>${data.contact || '-'}</td>
+            <td><a href="https://wa.me/${data.contact}" target="_blank" style="color:var(--primary); text-decoration:none;"><i class="fab fa-whatsapp"></i> ${data.contact || '-'}</a></td>
             <td>${data.project_need || '-'}</td>
-            <td><span class="project-details-text">${data.project_details || '-'}</span></td>
             <td>Rp ${parseInt(data.budget || 0).toLocaleString('id-ID')}</td>
+            <td>${locationHTML}</td>
             <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-            <td><small style="color:var(--link-color)">${data.link || '-'}</small></td>
             <td>
-                <button class="btn-edit" onclick="openModal('${key}', ${JSON.stringify(data).replace(/"/g, '&quot;')})">
+                <button class="btn-edit" onclick='openModal("${key}", ${JSON.stringify(data)})'>
                     <i class="fas fa-pencil-alt"></i>
                 </button>
             </td>
@@ -358,36 +311,14 @@
         tableBody.appendChild(row);
     }
 
-    function exportToExcel() {
-        if (allProjectData.length === 0) return alert("Tidak ada data untuk di-export!");
-        const worksheetData = allProjectData.map(item => ({
-            "ID Project": item.id,
-            "Nama Client": item.client,
-            "WhatsApp": item.contact,
-            "Kebutuhan": item.project_need,
-            "Detail Project": item.project_details,
-            "Budget": item.budget,
-            "Status": item.status == 1 ? "VERIFIED" : "PENDING",
-            "Link Akses": item.link,
-            "Waktu Submit": item.submitted_at_jakarta
-        }));
-        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Project Orders");
-        const now = new Date();
-        const timestamp = `${now.getDate()}-${now.getMonth()+1}-${now.getFullYear()}`;
-        XLSX.writeFile(workbook, `Report_Orders_${timestamp}.xlsx`);
-    }
-
     function openModal(key, data) {
         document.getElementById('editKey').value = key;
         document.getElementById('editClient').value = data.client || "";
         document.getElementById('editNeed').value = data.project_need || "";
-        document.getElementById('editDetails').value = data.project_details || "";
         document.getElementById('editBudget').value = data.budget || 0;
         document.getElementById('editLink').value = data.link || "";
         document.getElementById('editStatus').value = data.status || 0;
-        currentData = data; 
+        currentData = data;
         document.getElementById('editModal').style.display = 'block';
     }
 
@@ -396,42 +327,49 @@
     async function saveData() {
         const key = document.getElementById('editKey').value;
         const btnSave = document.querySelector('.btn-save');
-        btnSave.innerText = "Processing...";
-        btnSave.disabled = true;
-
+        btnSave.innerText = "Saving...";
+        
         const updatedData = {
             ...currentData,
             client: document.getElementById('editClient').value,
             project_need: document.getElementById('editNeed').value,
-            project_details: document.getElementById('editDetails').value,
             budget: document.getElementById('editBudget').value,
             link: document.getElementById('editLink').value,
             status: parseInt(document.getElementById('editStatus').value)
         };
 
         try {
-            const res = await fetch(`${CONFIG.URL}/set/${key}`, {
+            await fetch(`${CONFIG.URL}/set/${key}`, {
                 headers: { Authorization: `Bearer ${CONFIG.TOKEN}` },
                 method: 'POST',
                 body: JSON.stringify(updatedData)
             });
-
-            if (res.ok) {
-                alert("Database updated successfully!");
-                closeModal();
-                fetchAllData(); 
-            }
+            closeModal();
+            fetchAllData();
         } catch (error) {
-            alert("Gagal menyimpan data.");
+            alert("Simpan gagal!");
         } finally {
-            btnSave.innerText = "Update Data";
-            btnSave.disabled = false;
+            btnSave.innerText = "Simpan Perubahan";
         }
+    }
+
+    function exportToExcel() {
+        if (allProjectData.length === 0) return;
+        const worksheetData = allProjectData.map(item => ({
+            "ID": item.id,
+            "Client": item.client,
+            "WA": item.contact,
+            "Budget": item.budget,
+            "Status": item.status == 1 ? "VERIFIED" : "PENDING"
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Projects");
+        XLSX.writeFile(workbook, `Report_GPS_Admin.xlsx`);
     }
 
     window.onclick = function(event) { if (event.target == document.getElementById('editModal')) closeModal(); }
     window.onload = fetchAllData;
 </script>
-
 </body>
 </html>
