@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Project Order (Editor)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+        :root {
+            --primary: #4facfe;
+            --bg-body: #f4f7f6;
+            --glass: #ffffff;
+            --text-main: #333333;
+            --accent: #7e57c2;
+            --link-color: #007bff;
+            --success: #2ecc71;
+            --excel: #1d6f42;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--glass);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        h2 { color: var(--primary); margin: 0; }
+
+        .btn {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+        }
+
+        .refresh-btn { background: var(--primary); }
+        .download-btn { background: var(--excel); }
+        .btn:hover { opacity: 0.8; transform: translateY(-2px); }
+
+        .table-wrapper { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th {
+            background: #f8f9fa;
+            text-align: left;
+            padding: 15px;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #777;
+            border-bottom: 2px solid #eee;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        tr:hover { background-color: #f9f9f9; }
+
+        .project-details-text {
+            max-width: 200px;
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-verified { background: #d4edda; color: #155724; }
+
+        .btn-edit {
+            background: #eee;
+            border: none;
+            padding: 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            color: #555;
+        }
+
+        .btn-edit:hover { background: var(--primary); color: white; }
+
+        /* MODAL STYLES */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 550px;
+            margin: 40px auto;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-header { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: #666; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit;
+        }
+        .form-group textarea { height: 80px; resize: none; }
+
+        .modal-footer {
+            display: flex; gap: 10px; margin-top: 20px;
+        }
+
+        .btn-save { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; flex: 1; font-weight: 600; }
+        .btn-cancel { background: #ccc; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; flex: 1; }
+
+        .loading { text-align: center; padding: 50px; font-style: italic; color: #999; }
+    </style>
+</head>
+<body>
+
+<div class="admin-container">
+    <div class="header">
+        <h2><i class="fas fa-edit"></i> Admin P.O</h2>
+        <div class="action-btns">
+            <button class="btn download-btn" onclick="exportToExcel()">
+                <i class="fas fa-file-excel"></i> Dowload
+            </button>
+            <button class="btn refresh-btn" onclick="fetchAllData()">
+                <i class="fas fa-sync"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="orderTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Client</th>
+                    <th>WhatsApp</th>
+                    <th>Kebutuhan</th>
+                    <th>Project Details</th>
+                    <th>Budget</th>
+                    <th>Status</th>
+                    <th>Link Akses</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+        <div id="loader" class="loading">Menarik data terbaru...</div>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3>Edit Project Order</h3></div>
+        <input type="hidden" id="editKey">
+        <div class="form-group">
+            <label>Nama Client</label>
+            <input type="text" id="editClient">
+        </div>
+        <div class="form-group">
+            <label>Kebutuhan</label>
+            <input type="text" id="editNeed">
+        </div>
+        <div class="form-group">
+            <label>Project Details</label>
+            <textarea id="editDetails"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Budget (Angka)</label>
+            <input type="number" id="editBudget">
+        </div>
+        <div class="form-group">
+            <label>Link Akses</label>
+            <input type="text" id="editLink">
+        </div>
+        <div class="form-group">
+            <label>Status</label>
+            <select id="editStatus">
+                <option value="0">PENDING</option>
+                <option value="1">VERIFIED</option>
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal()">Batal</button>
+            <button class="btn-save" onclick="saveData()">Simpan Perubahan</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const CONFIG = {
+        URL: "https://enabled-crayfish-71186.upstash.io",
+        TOKEN: "gQAAAAAAARYSAAIncDE2MzUzMjQ5Mzg2N2E0YzU2OTUxODJjZWNmY2E2NzkyMXAxNzExODY",
+        PREFIX: "project_order_"
+    };
+
+    let allProjectData = []; // Untuk menyimpan data yang akan di-export
+    let currentData = {}; 
+
+    async function fetchAllData() {
+        const tableBody = document.getElementById('tableBody');
+        const loader = document.getElementById('loader');
+        tableBody.innerHTML = '';
+        loader.style.display = 'block';
+        allProjectData = [];
+
+        try {
+            const keysRes = await fetch(`${CONFIG.URL}/keys/${CONFIG.PREFIX}*`, {
+                headers: { Authorization: `Bearer ${CONFIG.TOKEN}` }
+            });
+            const keysData = await keysRes.json();
+            const keys = keysData.result || [];
+
+            if (keys.length === 0) {
+                loader.innerText = "Database kosong.";
+                return;
+            }
+
+            for (const key of keys) {
+                const valRes = await fetch(`${CONFIG.URL}/get/${key}`, {
+                    headers: { Authorization: `Bearer ${CONFIG.TOKEN}` }
+                });
+                const valData = await valRes.json();
+                if (valData.result) {
+                    const parsed = JSON.parse(valData.result);
+                    allProjectData.push(parsed);
+                    renderRow(key, parsed);
+                }
+            }
+            loader.style.display = 'none';
+        } catch (error) {
+            loader.innerText = "Gagal memuat data.";
+        }
+    }
+
+    function renderRow(key, data) {
+        const tableBody = document.getElementById('tableBody');
+        const row = document.createElement('tr');
+        const statusClass = data.status == 1 ? 'status-verified' : 'status-pending';
+        const statusText = data.status == 1 ? 'VERIFIED' : 'PENDING';
+
+        row.innerHTML = `
+            <td><strong>${data.id || '-'}</strong></td>
+            <td>${data.client || '-'}</td>
+            <td>${data.contact || '-'}</td>
+            <td>${data.project_need || '-'}</td>
+            <td><span class="project-details-text">${data.project_details || '-'}</span></td>
+            <td>Rp ${parseInt(data.budget || 0).toLocaleString('id-ID')}</td>
+            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            <td><small>${data.link || '-'}</small></td>
+            <td>
+                <button class="btn-edit" onclick="openModal('${key}', ${JSON.stringify(data).replace(/"/g, '&quot;')})">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    }
+
+    // Fungsi Export Excel
+    function exportToExcel() {
+        if (allProjectData.length === 0) return alert("Tidak ada data untuk di-export!");
+
+        // Format data untuk Excel
+        const worksheetData = allProjectData.map(item => ({
+            "ID Project": item.id,
+            "Nama Client": item.client,
+            "WhatsApp": item.contact,
+            "Kebutuhan": item.project_need,
+            "Detail Project": item.project_details,
+            "Budget": item.budget,
+            "Status": item.status == 1 ? "VERIFIED" : "PENDING",
+            "Link Akses": item.link,
+            "Waktu Submit": item.submitted_at_jakarta
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Project Orders");
+
+        // Penamaan file: PO_Update_DD-MM-YYYY_HH-mm.xlsx
+        const now = new Date();
+        const timestamp = `${now.getDate()}-${now.getMonth()+1}-${now.getFullYear()}_${now.getHours()}-${now.getMinutes()}`;
+        const fileName = `Project_Orders_${timestamp}.xlsx`;
+
+        XLSX.writeFile(workbook, fileName);
+    }
+
+    // Fungsi modal dan save data tetap sama
+    function openModal(key, data) {
+        document.getElementById('editKey').value = key;
+        document.getElementById('editClient').value = data.client || "";
+        document.getElementById('editNeed').value = data.project_need || "";
+        document.getElementById('editDetails').value = data.project_details || "";
+        document.getElementById('editBudget').value = data.budget || 0;
+        document.getElementById('editLink').value = data.link || "";
+        document.getElementById('editStatus').value = data.status || 0;
+        currentData = data; 
+        document.getElementById('editModal').style.display = 'block';
+    }
+
+    function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+
+    async function saveData() {
+        const key = document.getElementById('editKey').value;
+        const btnSave = document.querySelector('.btn-save');
+        btnSave.innerText = "Menyimpan...";
+        btnSave.disabled = true;
+
+        const updatedData = {
+            ...currentData,
+            client: document.getElementById('editClient').value,
+            project_need: document.getElementById('editNeed').value,
+            project_details: document.getElementById('editDetails').value,
+            budget: document.getElementById('editBudget').value,
+            link: document.getElementById('editLink').value,
+            status: parseInt(document.getElementById('editStatus').value)
+        };
+
+        try {
+            const res = await fetch(`${CONFIG.URL}/set/${key}`, {
+                headers: { Authorization: `Bearer ${CONFIG.TOKEN}` },
+                method: 'POST',
+                body: JSON.stringify(updatedData)
+            });
+
+            if (res.ok) {
+                alert("Data berhasil diupdate!");
+                closeModal();
+                fetchAllData(); 
+            }
+        } catch (error) {
+            alert("Gagal menyimpan data.");
+        } finally {
+            btnSave.innerText = "Simpan Perubahan";
+            btnSave.disabled = false;
+        }
+    }
+
+    window.onclick = function(event) { if (event.target == document.getElementById('editModal')) closeModal(); }
+    window.onload = fetchAllData;
+</script>
+
+</body>
+</html> 
