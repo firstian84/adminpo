@@ -159,7 +159,6 @@
             .action-btns { width: 100%; }
             .btn { flex: 1; justify-content: center; font-size: 11px; padding: 12px 5px; }
             
-            /* Sembunyikan Detail di mobile agar hemat space */
             th:nth-child(5), td:nth-child(5) { display: none; } 
             
             th, td { padding: 10px 5px; font-size: 11px; }
@@ -321,7 +320,7 @@
             <td>${locationHTML}</td>
             <td><span class="status-badge ${statusClass}">${statusText}</span></td>
             <td>
-                <button class="btn-edit" onclick='openModal("${key}", ${JSON.stringify(data).replace(/'/g, "&apos;")})'>
+                <button class="btn-edit" onclick='openModal("${key}", ${JSON.stringify(data).replace(/'/g, "\\'")})'>
                     <i class="fas fa-pencil-alt"></i>
                 </button>
             </td>
@@ -374,22 +373,46 @@
     }
 
     function exportToExcel() {
-        if (allProjectData.length === 0) return;
-        const worksheetData = allProjectData.map(item => ({
-            "ID": item.id,
-            "Waktu": item.submitted_at_jakarta || "",
-            "Client": item.client,
-            "WhatsApp": item.contact,
-            "Kebutuhan": item.project_need,
-            "Details": item.project_details || "",
-            "Link": item.link || "",
-            "Budget": item.budget,
-            "Status": item.status == 1 ? "VERIFIED" : "PENDING"
-        }));
+        if (allProjectData.length === 0) {
+            alert("Tidak ada data untuk diunduh.");
+            return;
+        }
+
+        const worksheetData = allProjectData.map(item => {
+            const locationString = (item.location && item.location.lat) 
+                ? `${item.location.lat}, ${item.location.lng}` 
+                : "N/A";
+
+            return {
+                "ID Project": item.id || "-",
+                "Waktu Submit": item.submitted_at_jakarta || "-",
+                "Nama Client": item.client || "-",
+                "WhatsApp": item.contact || "-",
+                "Kebutuhan": item.project_need || "-",
+                "Project Details": item.project_details || "-",
+                "Link Akses": item.link || "-",
+                "Budget (Rp)": parseInt(item.budget || 0),
+                "Lokasi GPS": locationString,
+                "Status": item.status == 1 ? "VERIFIED" : "PENDING"
+            };
+        });
+
         const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+        const colWidths = [
+            { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 20 },
+            { wch: 40 }, { wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 12 }
+        ];
+        worksheet['!cols'] = colWidths;
+
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Projects");
-        XLSX.writeFile(workbook, `Report_Full_Order.xlsx`);
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Order");
+        
+        // FORMAT NAMA FILE: Report_YYYY-MM-DD_HH-mm.xlsx
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+        const timeStr = now.getHours().toString().padStart(2, '0') + "-" + now.getMinutes().toString().padStart(2, '0');
+        
+        XLSX.writeFile(workbook, `Report_${dateStr}_${timeStr}.xlsx`);
     }
 
     window.onclick = function(event) { if (event.target == document.getElementById('editModal')) closeModal(); }
