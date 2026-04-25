@@ -50,6 +50,18 @@
             padding-bottom: 20px;
         }
 
+        /* DIGITAL CLOCK STYLE */
+        #digitalClock {
+            font-family: monospace;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 14px;
+            background: rgba(0,0,0,0.2);
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
         .action-btns { display: flex; gap: 10px; }
 
         h2 { color: var(--primary); margin: 0; font-weight: 700; }
@@ -71,7 +83,7 @@
             border: 1px solid var(--border);
         }
 
-        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1300px; }
 
         th {
             background: #1e293b; text-align: left; padding: 18px 15px;
@@ -112,10 +124,15 @@
 
         .status-badge {
             padding: 5px 12px; border-radius: 6px; font-size: 10px; font-weight: 700;
+            display: inline-block; text-align: center;
         }
 
         .status-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
         .status-verified { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        
+        .fin-none { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid #475569; }
+        .fin-wait { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; }
+        .fin-paid { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
 
         .btn-edit {
             background: #334155; border: none; padding: 8px 12px;
@@ -124,7 +141,6 @@
 
         .btn-edit:hover { background: var(--primary); color: white; }
 
-        /* MODAL STYLES */
         .modal {
             display: none; position: fixed; z-index: 1000;
             left: 0; top: 0; width: 100%; height: 100%;
@@ -151,22 +167,15 @@
 
         .loading { text-align: center; padding: 50px; color: var(--text-muted); }
 
-        /* --- DINAMIS ANDROID --- */
         @media screen and (max-width: 768px) {
             body { padding: 10px; }
             .admin-container { padding: 15px; border-radius: 12px; }
             .header { flex-direction: column; gap: 15px; align-items: flex-start; }
+            #digitalClock { width: 100%; text-align: center; box-sizing: border-box; }
             .action-btns { width: 100%; }
             .btn { flex: 1; justify-content: center; font-size: 11px; padding: 12px 5px; }
-            
-            th:nth-child(5), td:nth-child(5) { display: none; } 
-            
+            th:nth-child(5), td:nth-child(5), th:nth-child(8), td:nth-child(8) { display: none; } 
             th, td { padding: 10px 5px; font-size: 11px; }
-            .btn-map { font-size: 9px; padding: 5px; }
-            
-            .modal-content { width: 95%; margin: 10px auto; padding: 20px; max-height: 95vh; overflow-y: auto; }
-            .modal-footer { flex-direction: column-reverse; }
-            .btn-save, .btn-cancel { width: 100%; padding: 15px; }
         }
     </style>
 </head>
@@ -174,7 +183,10 @@
 
 <div class="admin-container">
     <div class="header">
-        <h2><i class="fas fa-map-marked-alt"></i> Admin P.O </h2>
+        <div>
+            <h2><i class="fas fa-map-marked-alt"></i> Admin P.O </h2>
+            <div id="digitalClock" style="margin-top: 10px;">Loading time...</div>
+        </div>
         <div class="action-btns">
             <button class="btn download-btn" onclick="exportToExcel()">
                 <i class="fas fa-file-excel"></i> Download
@@ -197,6 +209,7 @@
                     <th>Link</th>
                     <th>Budget</th>
                     <th>Lokasi (GPS)</th>
+                    <th>Finance</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>
@@ -223,7 +236,7 @@
         </div>
         <div class="form-group">
             <label>Project Details</label>
-            <textarea id="editDetails" rows="4" style="font-family: inherit; resize: vertical;"></textarea>
+            <textarea id="editDetails" rows="4"></textarea>
         </div>
         <div class="form-group">
             <label>Budget (Angka)</label>
@@ -234,7 +247,15 @@
             <input type="text" id="editLink">
         </div>
         <div class="form-group">
-            <label>Status</label>
+            <label>Finance Verification (FinVer)</label>
+            <select id="editFinver">
+                <option value="-1">NONE (-1)</option>
+                <option value="0">WAITING (0)</option>
+                <option value="1">PAID (1)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Status Admin</label>
             <select id="editStatus">
                 <option value="0">PENDING</option>
                 <option value="1">VERIFIED</option>
@@ -256,6 +277,15 @@
 
     let allProjectData = [];
     let currentData = {};
+
+    // REAL-TIME CLOCK
+    function updateClock() {
+        const now = new Date();
+        const options = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+        document.getElementById('digitalClock').innerText = now.toLocaleString('id-ID', options).replace(/\./g, ':');
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
     async function fetchAllData() {
         const tableBody = document.getElementById('tableBody');
@@ -295,12 +325,23 @@
         const statusClass = data.status == 1 ? 'status-verified' : 'status-pending';
         const statusText = data.status == 1 ? 'VERIFIED' : 'PENDING';
 
+        // FinVer Logic with payment_copied_at
+        let finClass = "fin-none";
+        let finText = "NONE";
+        let finSubText = "";
+
+        if (data.finver == 0) { 
+            finClass = "fin-wait"; 
+            finText = "WAITING"; 
+        } else if (data.finver == 1) { 
+            finClass = "fin-paid"; 
+            finText = "PAID"; 
+            finSubText = data.payment_copied_at ? `<br><small style="font-size:9px; opacity:0.8;">${data.payment_copied_at}</small>` : "";
+        }
+
         const waktuSubmit = data.submitted_at_jakarta || "-";
         const details = data.project_details || "-";
-
-        const linkHTML = data.link ? 
-            `<a href="${data.link}" target="_blank" style="color:var(--primary); font-size:11px;"><i class="fas fa-external-link-alt"></i> Buka</a>` : 
-            `<span style="color:var(--text-muted)">-</span>`;
+        const linkHTML = data.link ? `<a href="${data.link}" target="_blank" style="color:var(--primary); font-size:11px;"><i class="fas fa-external-link-alt"></i> Buka</a>` : `<span style="color:var(--text-muted)">-</span>`;
 
         let locationHTML = `<span style="color:var(--text-muted)">N/A</span>`;
         if (data.location && data.location.lat) {
@@ -318,6 +359,7 @@
             <td>${linkHTML}</td>
             <td>Rp ${parseInt(data.budget || 0).toLocaleString('id-ID')}</td>
             <td>${locationHTML}</td>
+            <td><span class="status-badge ${finClass}">${finText}${finSubText}</span></td>
             <td><span class="status-badge ${statusClass}">${statusText}</span></td>
             <td>
                 <button class="btn-edit" onclick='openModal("${key}", ${JSON.stringify(data).replace(/'/g, "\\'")})'>
@@ -336,6 +378,7 @@
         document.getElementById('editBudget').value = data.budget || 0;
         document.getElementById('editLink').value = data.link || "";
         document.getElementById('editStatus').value = data.status || 0;
+        document.getElementById('editFinver').value = data.finver !== undefined ? data.finver : -1;
         currentData = data;
         document.getElementById('editModal').style.display = 'block';
     }
@@ -345,8 +388,17 @@
     async function saveData() {
         const key = document.getElementById('editKey').value;
         const btnSave = document.querySelector('.btn-save');
+        const selectedFinver = parseInt(document.getElementById('editFinver').value);
+        
         btnSave.innerText = "Menyimpan...";
         
+        // Auto-generate timestamp if changing to PAID
+        let paymentTimestamp = currentData.payment_copied_at || null;
+        if (selectedFinver === 1 && currentData.finver !== 1) {
+            const now = new Date();
+            paymentTimestamp = now.toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':');
+        }
+
         const updatedData = {
             ...currentData,
             client: document.getElementById('editClient').value,
@@ -354,7 +406,9 @@
             project_details: document.getElementById('editDetails').value,
             budget: document.getElementById('editBudget').value,
             link: document.getElementById('editLink').value,
-            status: parseInt(document.getElementById('editStatus').value)
+            status: parseInt(document.getElementById('editStatus').value),
+            finver: selectedFinver,
+            payment_copied_at: paymentTimestamp
         };
 
         try {
@@ -373,46 +427,24 @@
     }
 
     function exportToExcel() {
-        if (allProjectData.length === 0) {
-            alert("Tidak ada data untuk diunduh.");
-            return;
-        }
-
-        const worksheetData = allProjectData.map(item => {
-            const locationString = (item.location && item.location.lat) 
-                ? `${item.location.lat}, ${item.location.lng}` 
-                : "N/A";
-
-            return {
-                "ID Project": item.id || "-",
-                "Waktu Submit": item.submitted_at_jakarta || "-",
-                "Nama Client": item.client || "-",
-                "WhatsApp": item.contact || "-",
-                "Kebutuhan": item.project_need || "-",
-                "Project Details": item.project_details || "-",
-                "Link Akses": item.link || "-",
-                "Budget (Rp)": parseInt(item.budget || 0),
-                "Lokasi GPS": locationString,
-                "Status": item.status == 1 ? "VERIFIED" : "PENDING"
-            };
-        });
+        if (allProjectData.length === 0) return alert("Tidak ada data.");
+        
+        const worksheetData = allProjectData.map(item => ({
+            "ID Project": item.id || "-",
+            "Waktu Submit": item.submitted_at_jakarta || "-",
+            "Nama Client": item.client || "-",
+            "WhatsApp": item.contact || "-",
+            "Kebutuhan": item.project_need || "-",
+            "Budget": parseInt(item.budget || 0),
+            "FinVer": item.finver == 1 ? "PAID" : (item.finver == 0 ? "WAITING" : "NONE"),
+            "Payment Time": item.payment_copied_at || "-",
+            "Admin Status": item.status == 1 ? "VERIFIED" : "PENDING"
+        }));
 
         const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-        const colWidths = [
-            { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 20 },
-            { wch: 40 }, { wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 12 }
-        ];
-        worksheet['!cols'] = colWidths;
-
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Order");
-        
-        // FORMAT NAMA FILE: Report_YYYY-MM-DD_HH-mm.xlsx
-        const now = new Date();
-        const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
-        const timeStr = now.getHours().toString().padStart(2, '0') + "-" + now.getMinutes().toString().padStart(2, '0');
-        
-        XLSX.writeFile(workbook, `Report_${dateStr}_${timeStr}.xlsx`);
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan");
+        XLSX.writeFile(workbook, `Report_Full_${new Date().getTime()}.xlsx`);
     }
 
     window.onclick = function(event) { if (event.target == document.getElementById('editModal')) closeModal(); }
