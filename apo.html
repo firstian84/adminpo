@@ -71,7 +71,7 @@
             border: 1px solid var(--border);
         }
 
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
 
         th {
             background: #1e293b; text-align: left; padding: 18px 15px;
@@ -82,6 +82,17 @@
         td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
 
         tr:hover { background-color: var(--hover); }
+
+        .details-cell {
+            max-width: 250px;
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
 
         .btn-map {
             background: var(--accent);
@@ -131,6 +142,7 @@
         .form-group input, .form-group textarea, .form-group select {
             width: 100%; padding: 10px; background: #0f172a;
             border: 1px solid var(--border); border-radius: 8px; color: white;
+            box-sizing: border-box;
         }
 
         .modal-footer { display: flex; gap: 10px; margin-top: 25px; }
@@ -139,29 +151,23 @@
 
         .loading { text-align: center; padding: 50px; color: var(--text-muted); }
 
-        /* --- TAMPILAN DINAMIS ANDROID (MEDIA QUERIES) --- */
+        /* --- DINAMIS ANDROID --- */
         @media screen and (max-width: 768px) {
             body { padding: 10px; }
             .admin-container { padding: 15px; border-radius: 12px; }
             .header { flex-direction: column; gap: 15px; align-items: flex-start; }
             .action-btns { width: 100%; }
-            .btn { flex: 1; justify-content: center; font-size: 12px; }
+            .btn { flex: 1; justify-content: center; font-size: 11px; padding: 12px 5px; }
             
-            /* Sembunyikan kolom ID dan Budget di HP agar tidak sempit */
-            th:nth-child(1), td:nth-child(1),
-            th:nth-child(5), td:nth-child(5) { display: none; }
+            /* Sembunyikan Detail di mobile agar hemat space */
+            th:nth-child(5), td:nth-child(5) { display: none; } 
             
-            th, td { padding: 12px 8px; font-size: 12px; }
+            th, td { padding: 10px 5px; font-size: 11px; }
+            .btn-map { font-size: 9px; padding: 5px; }
             
-            .modal-content { width: 95%; margin: 20px auto; padding: 20px; max-height: 90vh; overflow-y: auto; }
+            .modal-content { width: 95%; margin: 10px auto; padding: 20px; max-height: 95vh; overflow-y: auto; }
             .modal-footer { flex-direction: column-reverse; }
             .btn-save, .btn-cancel { width: 100%; padding: 15px; }
-        }
-
-        @media screen and (max-width: 480px) {
-            /* Sembunyikan Kebutuhan di layar sangat kecil agar tetap rapi */
-            th:nth-child(4), td:nth-child(4) { display: none; }
-            h2 { font-size: 18px; }
         }
     </style>
 </head>
@@ -184,10 +190,12 @@
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>ID / Waktu</th>
                     <th>Client</th>
                     <th>WhatsApp</th>
                     <th>Kebutuhan</th>
+                    <th>Project Details</th>
+                    <th>Link</th>
                     <th>Budget</th>
                     <th>Lokasi (GPS)</th>
                     <th>Status</th>
@@ -196,14 +204,14 @@
             </thead>
             <tbody id="tableBody"></tbody>
         </table>
-        <div id="loader" class="loading">Memproses data koordinat...</div>
+        <div id="loader" class="loading">Memuat data...</div>
     </div>
 </div>
 
 <div id="editModal" class="modal">
     <div class="modal-content">
         <div style="border-bottom: 1px solid var(--border); margin-bottom: 20px;">
-            <h3 style="color: var(--primary); margin-top: 0;">Edit PO</h3>
+            <h3 style="color: var(--primary); margin-top: 0;">Edit Data Order</h3>
         </div>
         <input type="hidden" id="editKey">
         <div class="form-group">
@@ -213,6 +221,10 @@
         <div class="form-group">
             <label>Kebutuhan</label>
             <input type="text" id="editNeed">
+        </div>
+        <div class="form-group">
+            <label>Project Details</label>
+            <textarea id="editDetails" rows="4" style="font-family: inherit; resize: vertical;"></textarea>
         </div>
         <div class="form-group">
             <label>Budget (Angka)</label>
@@ -231,7 +243,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn-cancel" onclick="closeModal()">Batal</button>
-            <button class="btn-save" onclick="saveData()">Simpan </button>
+            <button class="btn-save" onclick="saveData()">Simpan Perubahan</button>
         </div>
     </div>
 </div>
@@ -284,26 +296,32 @@
         const statusClass = data.status == 1 ? 'status-verified' : 'status-pending';
         const statusText = data.status == 1 ? 'VERIFIED' : 'PENDING';
 
+        const waktuSubmit = data.submitted_at_jakarta || "-";
+        const details = data.project_details || "-";
+
+        const linkHTML = data.link ? 
+            `<a href="${data.link}" target="_blank" style="color:var(--primary); font-size:11px;"><i class="fas fa-external-link-alt"></i> Buka</a>` : 
+            `<span style="color:var(--text-muted)">-</span>`;
+
         let locationHTML = `<span style="color:var(--text-muted)">N/A</span>`;
         if (data.location && data.location.lat) {
             const latLng = `${data.location.lat.toFixed(5)}, ${data.location.lng.toFixed(5)}`;
             const mapsUrl = `https://www.google.com/maps?q=${data.location.lat},${data.location.lng}`;
-            locationHTML = `
-                <a href="${mapsUrl}" target="_blank" class="btn-map">
-                    <i class="fas fa-map-marker-alt"></i> ${latLng}
-                </a>`;
+            locationHTML = `<a href="${mapsUrl}" target="_blank" class="btn-map"><i class="fas fa-map-marker-alt"></i> ${latLng}</a>`;
         }
 
         row.innerHTML = `
-            <td><strong>${data.id || '-'}</strong></td>
+            <td><strong>${data.id || '-'}</strong><br><small style="color:var(--text-muted)">${waktuSubmit}</small></td>
             <td>${data.client || '-'}</td>
             <td><a href="https://wa.me/${data.contact}" target="_blank" style="color:var(--primary); text-decoration:none;"><i class="fab fa-whatsapp"></i> ${data.contact || '-'}</a></td>
             <td>${data.project_need || '-'}</td>
+            <td><div class="details-cell" title="${details}">${details}</div></td>
+            <td>${linkHTML}</td>
             <td>Rp ${parseInt(data.budget || 0).toLocaleString('id-ID')}</td>
             <td>${locationHTML}</td>
             <td><span class="status-badge ${statusClass}">${statusText}</span></td>
             <td>
-                <button class="btn-edit" onclick='openModal("${key}", ${JSON.stringify(data)})'>
+                <button class="btn-edit" onclick='openModal("${key}", ${JSON.stringify(data).replace(/'/g, "&apos;")})'>
                     <i class="fas fa-pencil-alt"></i>
                 </button>
             </td>
@@ -315,6 +333,7 @@
         document.getElementById('editKey').value = key;
         document.getElementById('editClient').value = data.client || "";
         document.getElementById('editNeed').value = data.project_need || "";
+        document.getElementById('editDetails').value = data.project_details || "";
         document.getElementById('editBudget').value = data.budget || 0;
         document.getElementById('editLink').value = data.link || "";
         document.getElementById('editStatus').value = data.status || 0;
@@ -327,12 +346,13 @@
     async function saveData() {
         const key = document.getElementById('editKey').value;
         const btnSave = document.querySelector('.btn-save');
-        btnSave.innerText = "Saving...";
+        btnSave.innerText = "Menyimpan...";
         
         const updatedData = {
             ...currentData,
             client: document.getElementById('editClient').value,
             project_need: document.getElementById('editNeed').value,
+            project_details: document.getElementById('editDetails').value,
             budget: document.getElementById('editBudget').value,
             link: document.getElementById('editLink').value,
             status: parseInt(document.getElementById('editStatus').value)
@@ -357,15 +377,19 @@
         if (allProjectData.length === 0) return;
         const worksheetData = allProjectData.map(item => ({
             "ID": item.id,
+            "Waktu": item.submitted_at_jakarta || "",
             "Client": item.client,
-            "WA": item.contact,
+            "WhatsApp": item.contact,
+            "Kebutuhan": item.project_need,
+            "Details": item.project_details || "",
+            "Link": item.link || "",
             "Budget": item.budget,
             "Status": item.status == 1 ? "VERIFIED" : "PENDING"
         }));
         const worksheet = XLSX.utils.json_to_sheet(worksheetData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Projects");
-        XLSX.writeFile(workbook, `Report_GPS_Admin.xlsx`);
+        XLSX.writeFile(workbook, `Report_Full_Order.xlsx`);
     }
 
     window.onclick = function(event) { if (event.target == document.getElementById('editModal')) closeModal(); }
